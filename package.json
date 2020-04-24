@@ -1,0 +1,45 @@
+{
+  "name": "@wap/cli",
+  "version": "0.0.0",
+  "description": "Web Asset Packs",
+  "bin": "lib/cli.js",
+  "main": "lib/api.js",
+  "types": "lib/api.d.ts",
+  "scripts": {
+    "build": "npm run lint && tsc",
+    "lint": "node ./node_modules/.bin/eslint --ext .ts '?(src|spec)/**/*.ts' --cache",
+    "test": "npm run-script lint && nyc --reporter=lcov --reporter=text node -r ts-node/register ./spec/support/jasmine.ts"
+  },
+  "keywords": [
+    "web",
+    "asset",
+    "package",
+    "pack"
+  ],
+  "homepage": "https://github.com/webassetpack/cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webassetpack/cli.git"
+  },
+  "author": "norman@normanbreau.com",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@breautek/jasmine": "3.5.1",
+    "@totalpave/eslint-plugin": "3.0.1",
+    "@types/jasmine": "3.5.10",
+    "@types/yargs": "15.0.4",
+    "@typescript-eslint/eslint-plugin": "2.29.0",
+    "@typescript-eslint/parser": "2.29.0",
+    "@wap/core": "git+https://github.com/webassetpack/core.git",
+    "eslint": "6.8.0",
+    "jasmine-spec-reporter": "5.0.1",
+    "nyc": "15.0.1",
+    "ts-node": "8.9.0",
+    "typescript": "3.8.3"
+  },
+  "dependencies": {
+    "@totalpave/interfaces": "1.0.0",
+    "@types/node": "12.12.37",
+    "yargs": "15.3.1"
+  }
+}
