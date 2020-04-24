@@ -9,25 +9,24 @@ import {
     BYTE_POS_VERSION_MAJOR,
     BYTE_POS_VERSION_MINOR,
     BYTE_POS_VERSION_PATCH,
-    BYTE_POS_MANIFEST_LENGTH
+    BYTE_POS_MANIFEST_LENGTH,
+    BYTE_HEADER_SIZE
 } from '@wap/core';
 import {IDictionary} from '@totalpave/interfaces';
-
-/*
-TODO
-    - Security: Utilize checksums to ensure that the final written file is what we expect datawise.
-        * This should prevent malicious programs for listening and writing data or executable code into the WAP file without the user knowing.
-*/
 
 export class Packer {
     private _destination: string;
     private _tempFile: string;
     private _fd: FileSystem.WriteStream;
+    private _hash: Crypto.Hash;
+    private _sha1: string;
 
     constructor(destination: string) {
         this._destination = destination;
         this._tempFile = this._getTempPath();
         this._fd = FileSystem.createWriteStream(this._tempFile);
+        this._hash = Crypto.createHash('sha1');
+        this._sha1 = null;
     }
 
     private _generateRandomChars(): string {
@@ -61,10 +60,12 @@ export class Packer {
                     start: this._fd.bytesWritten,
                     end: this._fd.bytesWritten + buffer.byteLength
                 };
+                this._hash.update(buffer);
                 await this._writeToIntermediate(buffer);
             }
         }
 
+        this._sha1 = this._hash.digest('hex');
         this._fd.close();
 
         return new Promise<void>((resolve, reject) => {
@@ -81,12 +82,56 @@ export class Packer {
             output.write(headerBuffer);
             output.write(manifestBuffer);
             output.on('close', () => {
-                resolve();
+                this._verify().then(() => {
+                    resolve();
+                }).catch(reject);
             });
             output.on('error', (error: Error) => {
                 reject(error);
             });
             FileSystem.createReadStream(this._tempFile).pipe(output);
+        });
+    }
+
+    private _verify(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            let hash: Crypto.Hash = Crypto.createHash('sha1');
+            let readStream: FileSystem.ReadStream = FileSystem.createReadStream(this._destination);
+            let needsToIgnoreHeader: boolean = true;
+            readStream.on('data', (chunk: Buffer) => {
+                let data: Buffer = null;
+                let manifestLength: number = null;
+                if (needsToIgnoreHeader) {
+                    if (manifestLength === null) {
+                        manifestLength = chunk.readUInt16LE(BYTE_POS_MANIFEST_LENGTH) + BYTE_HEADER_SIZE;
+                    }
+
+                    if (chunk.byteLength < manifestLength) {
+                        // We don't have the complete header + manifest yet
+                        // so subtract this byte length and wait for the next chunk
+                        manifestLength -= chunk.byteLength;
+                        return;
+                    }
+                    else {
+                        needsToIgnoreHeader = false;
+                        data = chunk.slice(manifestLength);
+                    }
+                }
+                else {
+                    data = chunk;
+                }
+
+                hash.update(data);
+            });
+            readStream.on('end', () => {
+                let digest: string = hash.digest('hex');
+                if (digest === this._sha1) {
+                    resolve();
+                }
+                else {
+                    reject(new Error(`Checksum failed: Expected "${this._sha1}" but got "${digest}"`));
+                }
+            });
         });
     }
 
