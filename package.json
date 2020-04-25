@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@totalpave/interfaces": "1.0.0",
-    "@types/node": "12.12.37",
+    "@types/node": "13.13.2",
     "yargs": "15.3.1"
   }
 }

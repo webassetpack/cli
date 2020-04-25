@@ -9,20 +9,22 @@ import {
     BYTE_POS_VERSION_MAJOR,
     BYTE_POS_VERSION_MINOR,
     BYTE_POS_VERSION_PATCH,
-    BYTE_POS_MANIFEST_LENGTH,
-    BYTE_HEADER_SIZE
+    BYTE_POS_MANIFEST_LENGTH
+    // BYTE_HEADER_SIZE
 } from '@wap/core';
 import {IDictionary} from '@totalpave/interfaces';
+import {Stream} from 'stream';
+import {PackerStream} from './PackerStream';
 
 export class Packer {
-    private _destination: string;
+    // private _destination: string;
     private _tempFile: string;
     private _fd: FileSystem.WriteStream;
     private _hash: Crypto.Hash;
     private _sha1: string;
 
-    constructor(destination: string) {
-        this._destination = destination;
+    constructor(/*destination: string*/) {
+        // this._destination = destination;
         this._tempFile = this._getTempPath();
         this._fd = FileSystem.createWriteStream(this._tempFile);
         this._hash = Crypto.createHash('sha1');
@@ -48,7 +50,7 @@ export class Packer {
         };
     }
 
-    public async pack(definition: IDictionary<string>): Promise<void> {
+    public async pack(definition: IDictionary<string>): Promise<Stream> {
         let manifest: Manifest = {};
 
         for (let name in definition) {
@@ -68,7 +70,7 @@ export class Packer {
         this._sha1 = this._hash.digest('hex');
         this._fd.close();
 
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<Stream>((resolve, reject) => {
             let manifestBuffer: Buffer = Buffer.from(JSON.stringify(manifest));
             let manifestLength: number = manifestBuffer.byteLength;
             let headerBuffer: Buffer = Buffer.alloc(8);
@@ -78,62 +80,74 @@ export class Packer {
             headerBuffer.writeUInt16LE(version.patch, BYTE_POS_VERSION_PATCH);
             headerBuffer.writeUInt16LE(manifestLength, BYTE_POS_MANIFEST_LENGTH);
 
-            let output: FileSystem.WriteStream = FileSystem.createWriteStream(this._destination);
-            output.write(headerBuffer);
-            output.write(manifestBuffer);
-            output.on('close', () => {
-                this._verify().then(() => {
-                    resolve();
-                }).catch(reject);
+            let stream: PackerStream = new PackerStream();
+            stream.write(headerBuffer);
+            stream.write(manifestBuffer);
+            FileSystem.createReadStream(this._tempFile).pipe(stream);
+            stream.on('close', () => {
+                console.log('CLOSED', this._sha1, stream.getChecksum());
+                if (stream.getChecksum() !== this._sha1) {
+                    throw new Error(`Checksum failed: Expected "${this._sha1}" but got "${stream.getChecksum()}"`);
+                }
             });
-            output.on('error', (error: Error) => {
-                reject(error);
-            });
-            FileSystem.createReadStream(this._tempFile).pipe(output);
+            resolve(stream);
+
+            // let output: FileSystem.WriteStream = FileSystem.createWriteStream(this._destination);
+            // output.write(headerBuffer);
+            // output.write(manifestBuffer);
+            // output.on('close', () => {
+            //     this._verify().then(() => {
+            //         resolve();
+            //     }).catch(reject);
+            // });
+            // output.on('error', (error: Error) => {
+            //     reject(error);
+            // });
+            // FileSystem.createReadStream(this._tempFile).pipe(output);
         });
     }
 
-    private _verify(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            let hash: Crypto.Hash = Crypto.createHash('sha1');
-            let readStream: FileSystem.ReadStream = FileSystem.createReadStream(this._destination);
-            let needsToIgnoreHeader: boolean = true;
-            readStream.on('data', (chunk: Buffer) => {
-                let data: Buffer = null;
-                let manifestLength: number = null;
-                if (needsToIgnoreHeader) {
-                    if (manifestLength === null) {
-                        manifestLength = chunk.readUInt16LE(BYTE_POS_MANIFEST_LENGTH) + BYTE_HEADER_SIZE;
-                    }
+    // private _verify(): Promise<void> {
+    //     return new Promise<void>((resolve, reject) => {
+    //         let hash: Crypto.Hash = Crypto.createHash('sha1');
+    //         let readStream: FileSystem.ReadStream = FileSystem.createReadStream(this._destination);
+    //         let needsToIgnoreHeader: boolean = true;
+    //         readStream.on('data', (chunk: Buffer) => {
+    //             let data: Buffer = null;
+    //             let manifestLength: number = null;
+    //             if (needsToIgnoreHeader) {
+    //                 if (manifestLength === null) {
+    //                     manifestLength = chunk.readUInt16LE(BYTE_POS_MANIFEST_LENGTH) + BYTE_HEADER_SIZE;
+    //                 }
 
-                    if (chunk.byteLength < manifestLength) {
-                        // We don't have the complete header + manifest yet
-                        // so subtract this byte length and wait for the next chunk
-                        manifestLength -= chunk.byteLength;
-                        return;
-                    }
-                    else {
-                        needsToIgnoreHeader = false;
-                        data = chunk.slice(manifestLength);
-                    }
-                }
-                else {
-                    data = chunk;
-                }
+    //                 if (chunk.byteLength < manifestLength) {
+    //                     // We don't have the complete header + manifest yet
+    //                     // so subtract this byte length and wait for the next chunk
+    //                     manifestLength -= chunk.byteLength;
+    //                     return;
+    //                 }
+    //                 else {
+    //                     needsToIgnoreHeader = false;
+    //                     data = chunk.slice(manifestLength);
+    //                 }
+    //             }
+    //             else {
+    //                 data = chunk;
+    //             }
 
-                hash.update(data);
-            });
-            readStream.on('end', () => {
-                let digest: string = hash.digest('hex');
-                if (digest === this._sha1) {
-                    resolve();
-                }
-                else {
-                    reject(new Error(`Checksum failed: Expected "${this._sha1}" but got "${digest}"`));
-                }
-            });
-        });
-    }
+    //             hash.update(data);
+    //         });
+    //         readStream.on('end', () => {
+    //             let digest: string = hash.digest('hex');
+    //             if (digest === this._sha1) {
+    //                 resolve();
+    //             }
+    //             else {
+    //                 reject(new Error(`Checksum failed: Expected "${this._sha1}" but got "${digest}"`));
+    //             }
+    //         });
+    //     });
+    // }
 
     private _writeToIntermediate(buffer: Buffer): Promise<void> {
         return new Promise<void>((resolve, reject) => {

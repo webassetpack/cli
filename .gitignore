@@ -11,4 +11,4 @@ baseDevPath
 .*cache
 *.tsbuildinfo
 package-lock.json
-
+*.wap
