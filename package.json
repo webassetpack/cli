@@ -2,7 +2,9 @@
   "name": "@wap/cli",
   "version": "0.0.0-alpha.0",
   "description": "Web Asset Packs",
-  "bin": "lib/cli.js",
+  "bin": {
+    "wap": "./lib/cli.js"
+  },
   "main": "lib/api.js",
   "types": "lib/api.d.ts",
   "scripts": {

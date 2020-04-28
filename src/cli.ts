@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 
 import yargs = require('yargs');
 import * as Path from 'path';
