@@ -84,7 +84,7 @@ export class Packer {
             stream.write(headerBuffer);
             stream.write(manifestBuffer);
             FileSystem.createReadStream(this._tempFile).pipe(stream);
-            stream.on('close', () => {
+            stream.on('finish', () => {
                 if (stream.getChecksum() !== this._sha1) {
                     throw new Error(`Checksum failed: Expected "${this._sha1}" but got "${stream.getChecksum()}"`);
                 }
