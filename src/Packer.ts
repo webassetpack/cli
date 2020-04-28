@@ -174,7 +174,7 @@ export class Packer {
                     buffer = Buffer.concat([ buffer, chunk ]);
                 }
             });
-            deflator.on('close', () => {
+            deflator.on('finish', () => {
                 resolve(buffer);
             });
             deflator.on('error', (error: Error) => {
