@@ -29,7 +29,7 @@ export class PackerStream extends Transform {
 
         if (this._needsToIgnoreHeader) {
             if (this._manifestLength === null) {
-                this._manifestLength = chunk.readUInt16LE(BYTE_POS_MANIFEST_LENGTH) + BYTE_HEADER_SIZE;
+                this._manifestLength = chunk.readUInt16BE(BYTE_POS_MANIFEST_LENGTH) + BYTE_HEADER_SIZE;
             }
 
             if (chunk.byteLength < this._manifestLength) {
