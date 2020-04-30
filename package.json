@@ -42,8 +42,6 @@
   "dependencies": {
     "@totalpave/interfaces": "1.0.0",
     "@types/node": "13.13.2",
-    "@types/pako": "1.0.1",
-    "pako": "1.0.11",
     "tslib": "1.11.1",
     "yargs": "15.3.1"
   }
