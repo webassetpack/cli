@@ -4,3 +4,4 @@
  * api.
  */
 export * from './Packer';
+export * from './IDefinition';
