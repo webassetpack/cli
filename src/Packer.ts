@@ -1,8 +1,7 @@
 
 import * as FileSystem from 'fs';
 import * as Path from 'path';
-// import * as Zlib from 'zlib';
-import * as Pako from 'pako';
+import * as Zlib from 'zlib';
 import * as OS from 'os';
 import * as Crypto from 'crypto';
 import {
@@ -110,37 +109,25 @@ export class Packer {
 
     private _packFile(path: string): Promise<Buffer> {
         return new Promise<Buffer>((resolve, reject) => {
-            
-            // let deflator: Zlib.DeflateRaw = Zlib.createDeflateRaw();
+            let deflator: Zlib.DeflateRaw = Zlib.createDeflateRaw();
             let readStream: FileSystem.ReadStream = FileSystem.createReadStream(path);
-            let deflator: Pako.Deflate = new Pako.Deflate();
-            // let buffer: Buffer = null;
+            let buffer: Buffer = null;
 
-            readStream.on('data', (chunk: Buffer) => {
-                deflator.push(chunk, false);
+            deflator.on('data', (chunk: any) => {
+                if (buffer === null) {
+                    buffer = chunk;
+                }
+                else {
+                    buffer = Buffer.concat([ buffer, chunk ]);
+                }
             });
-            readStream.on('end', () => {
-                deflator.push(null, true);
-
-                // buffer = ;
-                resolve(Buffer.from(deflator.result));
+            deflator.on('end', () => {
+                resolve(buffer);
             });
-
-            // deflator.on('data', (chunk: any) => {
-            //     if (buffer === null) {
-            //         buffer = chunk;
-            //     }
-            //     else {
-            //         buffer = Buffer.concat([ buffer, chunk ]);
-            //     }
-            // });
-            // deflator.on('finish', () => {
-            //     resolve(buffer);
-            // });
-            // deflator.on('error', (error: Error) => {
-            //     reject(error);
-            // });
-            // readStream.pipe(deflator);
+            deflator.on('error', (error: Error) => {
+                reject(error);
+            });
+            readStream.pipe(deflator);
         });
     }
 }
