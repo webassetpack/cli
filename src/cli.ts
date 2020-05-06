@@ -6,6 +6,7 @@ import * as FileSystem from 'fs';
 import {Stream} from 'stream';
 import {IDictionary} from '@totalpave/interfaces';
 import {Packer} from './Packer';
+import { IDefinition } from './IDefinition';
 
 const argv = yargs.options({
     d: {
@@ -24,16 +25,12 @@ const argv = yargs.options({
 
 let destination: string = Path.resolve(argv.o);
 let definitionFile: string = Path.resolve(argv.d);
-let definition: IDictionary<string> = require(definitionFile);
+let definition: IDictionary<IDefinition> = require(definitionFile);
 
-let packer: Packer = new Packer(/*destination*/);
+let packer: Packer = new Packer();
 packer.pack(definition).then((stream: Stream) => {
     let output: FileSystem.WriteStream = FileSystem.createWriteStream(destination);
-    output.on('close', () => {
-        // process.nextTick(() => {
-        //     process.exit(0);
-        // });
-    });
+    output.on('close', () => {});
     output.on('error', (error: Error) => {
         console.error(error);
     });

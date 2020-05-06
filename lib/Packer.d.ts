@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import { IDictionary } from '@totalpave/interfaces';
+import { IDefinition } from './IDefinition';
 import { Stream } from 'stream';
 export declare class Packer {
     private _tempFile;
@@ -10,7 +11,7 @@ export declare class Packer {
     private _generateRandomChars;
     private _getTempPath;
     getVersion(): IDictionary<number>;
-    pack(definition: IDictionary<string>): Promise<Stream>;
+    pack(definition: IDictionary<IDefinition>): Promise<Stream>;
     private _writeToIntermediate;
     private _packFile;
 }

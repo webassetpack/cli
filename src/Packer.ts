@@ -13,8 +13,10 @@ import {
     // BYTE_HEADER_SIZE
 } from '@wap/core';
 import {IDictionary} from '@totalpave/interfaces';
+import {IDefinition} from './IDefinition';
 import {Stream} from 'stream';
 import {PackerStream} from './PackerStream';
+import * as MimeTypes from 'mime-types';
 
 export class Packer {
     // private _destination: string;
@@ -50,18 +52,24 @@ export class Packer {
         };
     }
 
-    public async pack(definition: IDictionary<string>): Promise<Stream> {
+    public async pack(definition: IDictionary<IDefinition>): Promise<Stream> {
         let manifest: Manifest = {};
 
         for (let name in definition) {
-            let path: string = Path.resolve(definition[name]);
+            let path: string = Path.resolve(definition[name].path);
             let stat: FileSystem.Stats = FileSystem.lstatSync(path);
+            
+            let type: string = definition[name].type;
+            if (!type) {
+                type = MimeTypes.lookup(name) || 'application/octet-stream';
+            }
+
             if (stat.isFile()) {
                 let buffer: Buffer = await this._packFile(path);
                 manifest[name] = {
                     start: this._fd.bytesWritten,
                     end: this._fd.bytesWritten + buffer.byteLength,
-                    useCompression: true
+                    type: type
                 };
                 this._hash.update(buffer);
                 await this._writeToIntermediate(buffer);
