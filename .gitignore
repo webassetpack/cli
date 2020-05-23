@@ -1,14 +1,12 @@
 node_modules
 ._*
 .DS_Store
-test
-bt-local-config.json
 package-lock.json
 coverage
 .nyc_output
-baseDevPath
 .vscode
 .*cache
 *.tsbuildinfo
 package-lock.json
 *.wap
+lib
