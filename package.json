@@ -42,7 +42,7 @@
   "dependencies": {
     "@totalpave/interfaces": "1.0.0",
     "@types/mime-types": "2.1.0",
-    "@types/node": "13.13.2",
+    "@types/node": "14.0.5",
     "@types/pako": "1.0.1",
     "mime-types": "2.1.27",
     "pako": "1.0.11",
